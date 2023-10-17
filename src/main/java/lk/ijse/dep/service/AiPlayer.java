@@ -1,25 +1,34 @@
 package lk.ijse.dep.service;
 
-import org.w3c.dom.Node;
-
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 
+//implement the player abstrct class
 public class AiPlayer extends Player {
-    public AiPlayer (Board board){
-        super(board);
 
+    //player and ai player have board but this time super is ai player board
+    public AiPlayer(Board board) {
+        super(board);
     }
+
     @Override
     public void movePiece(int col) {
-//        do{
-//            col=(int) (Math.random()*6);
-//        }while (!(col>-1 && col<6)|| !(board.isLegalMoves(col))) ;
+
+//        do {
+//            // *6 bcz Math.random() generates random decimal no.s between 0.0 and 1.0
+//            col =  (int) (Math.random() * 6);
+
+//        } while (!(col > -1 && col < 6) || !(board.isLegalMove(col)));
+
+        /////////////////////MCTS ALGORITHM/////////////////////
 
         Mcts mcts = new Mcts(board.getBoardImpl());
-        col = mcts.starMCTS();
+        col = mcts.startMCTS();
+
+        /////////////////////MCTS ALGORITHM/////////////////////
+
         if (board.isLegalMoves(col)) {
             board.updateMove(col, Piece.GREEN);
             board.getBoardUI().update(col, false);
@@ -34,23 +43,31 @@ public class AiPlayer extends Player {
             }
         }
     }
+    /// -> MCTS Algorithm <- ///
+
     static class Mcts {
-        private BoardImpl board;
-        public Mcts(BoardImpl board){
-            this.board=board;
+        //inorder to catch boardimpl's board (2D array)
+        private final BoardImpl board;
+
+        //assign boardimpl's board
+        public Mcts(BoardImpl board) {
+            this.board = board;
         }
 
-        public  int starMCTS(){
-            System.out.println("MCTS  working");
+        //initialize MCTS
+        public int startMCTS(){
+            System.out.println("MCTS working.");
             int count=0;
 
-            Node newNode=new Node(board);
+            //creates new node
+            Node tree= new Node(board);
 
+            //Recurring Amount that MCTS checkings need to be carry-on
             while (count<4000){
                 count++;
 
                 //Select Node
-                Node promisingNode = selectPromisingNode(newNode);
+                Node promisingNode = selectPromisingNode(tree);
 
                 //Expand Node
                 Node selected=promisingNode;
@@ -66,7 +83,7 @@ public class AiPlayer extends Player {
                 backPropagation(resultPiece,selected);
             }
 
-            Node best= newNode.getChildWithMaxScore();
+            Node best= tree.getChildWithMaxScore();
 
             System.out.println("Best move scored " + best.score + " and was visited " + best.visits + " times");
 
@@ -122,56 +139,67 @@ public class AiPlayer extends Player {
 
             }
 
-            int random = Board.RANDOM_GENERATOR.nextInt(node.child.size());
+            int random = Board.RANDOM_GENERATOR.nextInt(node.children.size());
 
-            return node.child.get(random);
+            return node.children.get(random);
         }
         //select & return the best node with highest UCT value after backpropagation
         private Node selectPromisingNode(Node tree) {
             Node node=tree;
-            while (node.child.size()!=0){
+            while (node.children.size()!=0){
                 node=UCT.findBestNodeWithUCT(node);
             }
             return node;
         }
     }
-
-    public static class UCT {
-        public static double uct(int nodeVisit, int totalVisit, double winScore) {
-            if (nodeVisit == 0) {
-                return Integer.MAX_VALUE;
-            }
-            return ((double) winScore / (double) nodeVisit) + 1.41 * Math.sqrt(Math.log(totalVisit) / (double) nodeVisit);
-        }
-        public static Node findBestNodeWithUCT(Node node){
-            int parentVisit = node.visits;
-            return Collections.max(node.child,Comparator.comparing(c ->uct(parentVisit,c.score,c.visits)));
-        }
-    }
-    static class Node{
+    static class Node {
+        //catch the boardimpl's current board (2D array)
         public BoardImpl board;
-        // count visit node back
+        //counts the no.of visits via backpropagation phase
         public int visits;
+        //generate a score (according to best selection path) via backpropagation phase
         public int score;
-        List<Node> child=new ArrayList<>();
-        Node parent =null;
-
-        public  Node(BoardImpl board){
-            this.board=board;
+        //children array holds each & every possible moves as nodes
+        List<Node> children= new ArrayList<>();
+        //every child has a parent child's reference (so via backpropagation it selects the highest UCT valued path to drop the ball)
+        Node parent=null;
+        //catches boardimpl's board
+        public Node(BoardImpl board) {
+            this.board = board;
         }
-        public Node getChildWithMaxScore() {
-            Node result = child.get(0);
-            for (int i = 1; i < child.size(); i++) {
-                if(child.get(i).score>result.score){
-                    result=child.get(i);
+        //return the highest valued child via backpropagation (if AI won +1 ; fail -1)
+        Node getChildWithMaxScore() {
+            Node result = children.get(0);
+            for (int i = 1; i < children.size(); i++) {
+                if (children.get(i).score > result.score) {
+                    result = children.get(i);
                 }
             }
             return result;
         }
         //add new node to children arrayList
         void addChild(Node node) {
-            child.add(node);
+            children.add(node);
         }
-
+    }
+    //use-case test (UCT) / UpperConfidenceBound - test the quality characteristics of sustainability, effectivity
+    static class UCT {
+        //UCT Value calculate via selection phase
+        public static double uctValue(
+                int totalVisit, double nodeWinScore, int nodeVisit) {
+            if (nodeVisit == 0) {
+                return Integer.MAX_VALUE;
+            }
+            return ( nodeWinScore / (double) nodeVisit)
+                    + 1.41 * Math.sqrt(Math.log(totalVisit) / (double) nodeVisit);
+        }
+        //Find the best node with highest UCT value
+        public static Node findBestNodeWithUCT(Node node) {
+            int parentVisit = node.visits;
+            return Collections.max(
+                    node.children,
+                    Comparator.comparing(c -> uctValue(parentVisit,
+                            c.score, c.visits)));
+        }
     }
 }

@@ -2,7 +2,7 @@ package lk.ijse.dep.service;
 
 import java.util.List;
 import java.util.ArrayList;
-
+//class implemnt the interface
 public class BoardImpl implements Board {
     public int cols;
     public Piece piece;
@@ -10,7 +10,8 @@ public class BoardImpl implements Board {
     private Piece[][] pieces;
 
 
-
+    //if the method declre the class name it is constructor
+    //this time array value assign the
     public BoardImpl( BoardUI boardUI) {
         this.boardUI = boardUI;
         this.pieces = new Piece[NUM_OF_COLS][NUM_OF_ROWS];
@@ -21,11 +22,12 @@ public class BoardImpl implements Board {
         }
     }
 
-
+    //override method in board
     @Override
     public BoardUI getBoardUI() {
         return this.boardUI;
     }
+
 
     @Override
     public int findNextAvailableSpot(int col) {
@@ -63,7 +65,7 @@ public class BoardImpl implements Board {
         piece=move;
         int row = findNextAvailableSpot(col);
         if (row != -1) {
-            pieces[col][row] = move;
+            pieces[cols][row] = piece;
         }
     }
 
@@ -97,25 +99,25 @@ public class BoardImpl implements Board {
         }
         return new Winner(Piece.EMPTY);
     }
-//Algorythm methods
-public BoardImpl(Piece[][] pieces, BoardUI boardUI){
+    //Algorythm methods(MCTS)
+    //calling the all args constructor
+    public BoardImpl(Piece[][] pieces, BoardUI boardUI){
     this.pieces = new Piece[NUM_OF_COLS][NUM_OF_ROWS];
 
     //copies existing 2D array to newly created array here
-    for (int i = 0;i < NUM_OF_COLS;i++){
+      for (int i = 0;i < NUM_OF_COLS;i++){
         for (int j = 0;j < NUM_OF_ROWS;j++){
             this.pieces[i][j] = pieces[i][j];
         }
-    }
+      }
     this.boardUI = boardUI;
-}
+    }
+    //  get the pieces are empty or not
     public boolean getStatus() {
         if (!existLegalMoves()) return false;
-
         Winner winner = findWinner();
         return winner.getWinningPiece() == Piece.EMPTY;
     }
-
 
     public BoardImpl getRandomLegalNextMove() {
         final List<BoardImpl> legalMoves = getAllLegalNextMoves();
@@ -126,11 +128,12 @@ public BoardImpl(Piece[][] pieces, BoardUI boardUI){
         random =Board.RANDOM_GENERATOR.nextInt(legalMoves.size());
         return legalMoves.get(random);
     }
+    //return the boardImpl
     @Override
     public BoardImpl getBoardImpl() {
         return this;
     }
-
+    //get the all legal next moves it store the array list
     public List<BoardImpl> getAllLegalNextMoves() {
         Piece nextPiece = piece == Piece.BLUE ? Piece.GREEN : Piece.BLUE;
         List<BoardImpl> nextMoves = new ArrayList<>();
